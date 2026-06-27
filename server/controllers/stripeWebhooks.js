@@ -1,44 +1,68 @@
-import stripe from "stripe";
-import Booking from '../models/Booking.js'
+import Stripe from "stripe";
+import Booking from "../../../models/Booking.js";
 
-export const stripeWebhooks = async (request, response)=>{
-    const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY);
-    const sig = request.headers["stripe-signature"];
+export const config = {
+  api: {
+    bodyParser: false, // IMPORTANT for Stripe
+  },
+};
 
-    let event;
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-    try{
-      event = stripeInstance.webhooks.constructEvent(request.body, sig, process.env.STRIPE_WEBHOOK_SECRET)
-    }catch(error){
-      return response.status(400).send(`Webhook Error: ${error.message}`);
-    }
+const buffer = async (req) => {
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+  }
+  return Buffer.concat(chunks);
+};
 
-    try{
-      switch (event.type) {
-        case "payment_intent.succeeded": {
-            const sessionList = await stripeInstance.checkout.sessions.list({
-                payment_intent: paymentIntent.id
-            })
-            const session = sessionList.data[0];
-            const { bookingId } = session.metadata;
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).send("Method not allowed");
+  }
 
-            await Booking.findByIdAndUpdate(bookingId, {
-                isPaid: true,
-                paymentLink: ""
-            })
-            break;
-        }
+  const sig = req.headers["stripe-signature"];
 
-          
+  let event;
 
-        default:
+  try {
+    const rawBody = await buffer(req);
 
-          console.log('Unhandled event type:', event.type)
+    event = stripe.webhooks.constructEvent(
+      rawBody,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err) {
+    console.log("Webhook error:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  console.log("🔥 WEBHOOK HIT:", event.type);
+
+  try {
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+
+      const bookingId = session.metadata?.bookingId;
+
+      if (!bookingId) {
+        console.log("No bookingId found");
+        return res.json({ received: true });
       }
-      response.json({received: true})
-    }catch(err){
-        console.error("Webhook processing error:", err);
-        response.status(500).send("Internal Server Error");
 
+      await Booking.findByIdAndUpdate(bookingId, {
+        isPaid: true,
+        paymentLink: "",
+      });
+
+      console.log("✅ Booking marked paid:", bookingId);
     }
+
+    res.json({ received: true });
+  } catch (err) {
+    console.error("Webhook processing error:", err);
+    res.status(500).send("Server error");
+  }
 }

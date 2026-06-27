@@ -16,7 +16,11 @@ const PORT = process.env.PORT || 3000;
 
 await connectDB()
 
-app.use('/api/stripe', express.raw({type:'application/json'}), stripeWebhooks)
+app.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhooks
+);
 
 app.use(express.json())
 app.use(cors())
