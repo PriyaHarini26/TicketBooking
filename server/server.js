@@ -9,18 +9,12 @@ import showRouter from './routes/showRoutes.js';
 import bookingRouter from './routes/bookingRoutes.js';
 import adminRouter from './routes/adminRoutes.js';
 import userRouter from './routes/userRoutes.js';
-import stripeWebhooks from "./controllers/stripeWebhooks.js";
+import stripeWebhooks from './controllers/stripeWebhooks.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 await connectDB()
-
-// 👇 Add this
-app.use((req, res, next) => {
-  console.log("➡️", req.method, req.url);
-  next();
-});
 
 app.use(
   "/api/stripe",
