@@ -94,6 +94,10 @@ const sendBookingConfirmationEmail= inngest.createFunction(
       populate: { path: 'movie', model: 'Movie' }
     }).populate('user');
 
+   console.log("Booking:", booking);
+    console.log("Sending email to:", booking.user.email);
+    console.log("SMTP_USER:", process.env.SMTP_USER);
+    console.log("SENDER_EMAIL:", process.env.SENDER_EMAIL);
 
    await sendEmail({
   to: booking.user.email,

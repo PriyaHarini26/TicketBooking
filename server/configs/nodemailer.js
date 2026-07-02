@@ -1,4 +1,3 @@
-import { response } from "express";
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
@@ -10,15 +9,17 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendEmail = async ({to, subject, body}) => {
-    const respone = await transporter.sendMail({
-        from: process.env.SENDER_EMAIL,
-        to,
-        subject,
-        html: body,
-    })
-    return response
+const sendEmail = async ({ to, subject, body }) => {
+  const info = await transporter.sendMail({
+    from: process.env.SENDER_EMAIL,
+    to,
+    subject,
+    html: body,
+  });
 
-}
+  console.log("✅ Email sent:", info);
+
+  return info;
+};
 
 export default sendEmail;

@@ -42,7 +42,7 @@ export const createBooking = async (req, res)=> {
        showData.markModified('occupiedSeats');
        await showData.save();
 
-       const stripeInsatance = new stripe(process.env.STRIPE_SECRET_KEY)
+       const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY)
 
        const line_items = [{
         price_data: {
@@ -55,7 +55,7 @@ export const createBooking = async (req, res)=> {
         quantity: 1
        }]
        
-       const session = await stripeInsatance.checkout.sessions.create({
+       const session = await stripeInstance.checkout.sessions.create({
         success_url: `${origin}/loading/my-bookings`,
         cancel_url: `${origin}/my-bookings`,
         line_items: line_items,
